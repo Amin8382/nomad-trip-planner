@@ -1,0 +1,13 @@
+target/
+*.class
+*.jar
+*.war
+*.log
+*.iml
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+application-local.yml
