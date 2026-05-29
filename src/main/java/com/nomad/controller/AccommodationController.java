@@ -19,8 +19,11 @@ public class AccommodationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AccommodationDto>> getByCity(@RequestParam Long cityId,
+    public ResponseEntity<List<AccommodationDto>> getByCity(@RequestParam(required = false) Long cityId,
                                                              @RequestParam(required = false) BigDecimal maxPrice) {
+        if (cityId == null) {
+            return ResponseEntity.ok(accommodationService.findAll());
+        }
         if (maxPrice != null) {
             return ResponseEntity.ok(accommodationService.findByCityAndMaxPrice(cityId, maxPrice));
         }

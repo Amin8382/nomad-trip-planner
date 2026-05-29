@@ -19,8 +19,11 @@ public class CoworkingSpaceController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CoworkingSpaceDto>> getByCity(@RequestParam Long cityId,
+    public ResponseEntity<List<CoworkingSpaceDto>> getByCity(@RequestParam(required = false) Long cityId,
                                                               @RequestParam(required = false) BigDecimal maxPrice) {
+        if (cityId == null) {
+            return ResponseEntity.ok(coworkingSpaceService.findAll());
+        }
         if (maxPrice != null) {
             return ResponseEntity.ok(coworkingSpaceService.findByCityAndMaxPrice(cityId, maxPrice));
         }

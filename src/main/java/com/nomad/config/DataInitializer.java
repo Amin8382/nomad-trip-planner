@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Component
@@ -17,6 +18,7 @@ public class DataInitializer implements CommandLineRunner {
     private final AccommodationRepository accommodationRepository;
     private final CoworkingSpaceRepository coworkingSpaceRepository;
     private final FlightRepository flightRepository;
+    private final TripRepository tripRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UserRepository userRepository,
@@ -24,12 +26,14 @@ public class DataInitializer implements CommandLineRunner {
                            AccommodationRepository accommodationRepository,
                            CoworkingSpaceRepository coworkingSpaceRepository,
                            FlightRepository flightRepository,
+                           TripRepository tripRepository,
                            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.cityRepository = cityRepository;
         this.accommodationRepository = accommodationRepository;
         this.coworkingSpaceRepository = coworkingSpaceRepository;
         this.flightRepository = flightRepository;
+        this.tripRepository = tripRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -74,6 +78,48 @@ public class DataInitializer implements CommandLineRunner {
         flightRepository.save(makeFlight("Ryanair", lisbon, tenerife, new BigDecimal("30"), 135));
         flightRepository.save(makeFlight("Vueling", lisbon, medellin, new BigDecimal("350"), 540));
         flightRepository.save(makeFlight("Air France", lisbon, bangkok, new BigDecimal("450"), 660));
+
+        // Seed trips for Alice
+        Accommodation cozyStudio = findAccommodation("Cozy Studio");
+        Accommodation greenVilla = findAccommodation("Green Villa");
+        Accommodation sukSuite = findAccommodation("Sukhumvit Suite");
+        CoworkingSpace punspace = findCoworking("Punspace");
+        CoworkingSpace outpost = findCoworking("Outpost Ubud");
+        CoworkingSpace hubba = findCoworking("Hubba");
+
+        makeTrip(user, "Chiang Mai Slow Living", Vibe.CHILL, new BigDecimal("500"),
+                LocalDate.now().minusDays(14), LocalDate.now().minusDays(7), TripStatus.COMPLETED, new Object[][]{
+                {1, LocalDate.now().minusDays(14), chiangMai, cozyStudio, punspace, "Arrived. Checked into Cozy Studio. Night bazaar."},
+                {2, LocalDate.now().minusDays(13), chiangMai, cozyStudio, punspace, "Full day at Punspace. Community lunch. Nimman evening."},
+                {3, LocalDate.now().minusDays(12), chiangMai, cozyStudio, punspace, "Doi Suthep hike. Half day at Punspace."},
+                {4, LocalDate.now().minusDays(11), chiangMai, cozyStudio, null, "Rest day — cooking class, Thai massage."},
+                {5, LocalDate.now().minusDays(10), chiangMai, cozyStudio, punspace, "Deep work day. Finished milestone."},
+                {6, LocalDate.now().minusDays(9), chiangMai, cozyStudio, punspace, "Last work day. Goodbyes."},
+                {7, LocalDate.now().minusDays(8), chiangMai, null, null, "Departure. Airport transfer."},
+        });
+
+        makeTrip(user, "Ubud Work & Wander", Vibe.BALANCED, new BigDecimal("800"),
+                LocalDate.now().plusDays(10), LocalDate.now().plusDays(19), TripStatus.BOOKED, new Object[][]{
+                {1, LocalDate.now().plusDays(10), bali, greenVilla, outpost, "Arrive Ubud. Green Villa. Rice terrace walk."},
+                {2, LocalDate.now().plusDays(11), bali, greenVilla, outpost, "First day at Outpost Ubud. Evening yoga."},
+                {3, LocalDate.now().plusDays(12), bali, greenVilla, outpost, "Work half day. Tegallalang Rice Terrace."},
+                {4, LocalDate.now().plusDays(13), bali, greenVilla, null, "Day trip Uluwatu — surf and beach clubs."},
+                {5, LocalDate.now().plusDays(14), bali, greenVilla, outpost, "Full work day. Client calls, content writing."},
+                {6, LocalDate.now().plusDays(15), bali, greenVilla, outpost, "Half day work. Canggu visit."},
+                {7, LocalDate.now().plusDays(16), bali, greenVilla, outpost, "Deep focus. Evening sound healing."},
+                {8, LocalDate.now().plusDays(17), bali, greenVilla, outpost, "Cafe work. Sunset at Tanah Lot."},
+                {9, LocalDate.now().plusDays(18), bali, greenVilla, outpost, "Last work day. Team retro."},
+                {10, LocalDate.now().plusDays(19), bali, null, null, "Depart Ubud. Airport transfer."},
+        });
+
+        makeTrip(user, "Bangkok Express", Vibe.FAST, new BigDecimal("400"),
+                LocalDate.now().plusMonths(2), LocalDate.now().plusMonths(2).plusDays(4), TripStatus.PLANNING, new Object[][]{
+                {1, LocalDate.now().plusMonths(2), bangkok, sukSuite, hubba, "Arrive BKK. Sukhumvit Suite. Quick Hubba session."},
+                {2, LocalDate.now().plusMonths(2).plusDays(1), bangkok, sukSuite, hubba, "Full work at Hubba. Street food. Meetup."},
+                {3, LocalDate.now().plusMonths(2).plusDays(2), bangkok, sukSuite, hubba, "Morning calls. Grand Palace afternoon."},
+                {4, LocalDate.now().plusMonths(2).plusDays(3), bangkok, sukSuite, hubba, "Final sprint. Rooftop bar evening."},
+                {5, LocalDate.now().plusMonths(2).plusDays(4), bangkok, null, null, "Departure. Fly home."},
+        });
     }
 
     private City createCity(String name, String country, String tz, double costIndex, double lat, double lon) {
@@ -122,5 +168,42 @@ public class DataInitializer implements CommandLineRunner {
         f.setPrice(price);
         f.setDurationMinutes(duration);
         return f;
+    }
+
+    private Trip makeTrip(User user, String name, Vibe vibe, BigDecimal budget,
+                            LocalDate start, LocalDate end, TripStatus status,
+                            Object[][] days) {
+        Trip trip = new Trip();
+        trip.setUser(user);
+        trip.setName(name);
+        trip.setVibe(vibe);
+        trip.setTotalBudget(budget);
+        trip.setStartDate(start);
+        trip.setEndDate(end);
+        trip.setStatus(status);
+        for (Object[] row : days) {
+            ItineraryDay day = new ItineraryDay();
+            day.setTrip(trip);
+            day.setDayNumber((Integer) row[0]);
+            day.setDate((LocalDate) row[1]);
+            day.setCity((City) row[2]);
+            day.setAccommodation((Accommodation) row[3]);
+            day.setCoworkingSpace((CoworkingSpace) row[4]);
+            day.setNotes((String) row[5]);
+            trip.getItineraryDays().add(day);
+        }
+        return tripRepository.save(trip);
+    }
+
+    private Accommodation findAccommodation(String name) {
+        return accommodationRepository.findAll().stream()
+                .filter(a -> a.getName().equals(name))
+                .findFirst().orElse(null);
+    }
+
+    private CoworkingSpace findCoworking(String name) {
+        return coworkingSpaceRepository.findAll().stream()
+                .filter(c -> c.getName().equals(name))
+                .findFirst().orElse(null);
     }
 }

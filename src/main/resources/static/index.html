@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wanderbase — Nomad Trip OS</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --cream:#faf6f0;--sand:#f5ede3;--warm:#1a1410;--warm2:#2a221c;--warm3:#3d322a;
+  --card:#fffaf5;--text:#1a1410;--text-muted:#8a7a6a;--border:#e8ddd2;
+  --sunset:#f97316;--sunset-light:#fb923c;--teal:#0d9488;--gold:#d97706;--rose:#e11d48;
+  --font:'Segoe UI',system-ui,-apple-ui,sans-serif;
+  --shadow:0 2px 12px rgba(26,20,16,.06);--shadow-lg:0 8px 40px rgba(26,20,16,.1);
+  --sidebar:260px
+}
+body{font-family:var(--font);background:var(--cream);color:var(--text);min-height:100vh}
+.d-none{display:none!important}
+
+/* Layout */
+.app-layout{display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{
+  width:var(--sidebar);background:var(--card);border-right:1px solid var(--border);
+  position:fixed;top:0;left:0;height:100vh;z-index:100;
+  display:flex;flex-direction:column;padding:0
+}
+.sidebar-brand{
+  padding:1.5rem 1.25rem;border-bottom:1px solid var(--border);
+  font-weight:800;font-size:1.15rem;
+  display:flex;align-items:center;gap:.5rem
+}
+.sidebar-brand span{color:var(--sunset);background:linear-gradient(135deg,var(--sunset),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sidebar-nav{flex:1;padding:.75rem;overflow-y:auto}
+.sidebar-nav .sec{font-size:.6875rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;padding:.75rem 1rem .5rem}
+.nav-item{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.625rem 1rem;border-radius:10px;
+  color:var(--text-muted);font-size:.8125rem;font-weight:500;
+  cursor:pointer;transition:all .15s;border:none;background:none;width:100%;font-family:var(--font);text-align:left
+}
+.nav-item:hover{background:var(--cream);color:var(--text)}
+.nav-item.active{background:linear-gradient(135deg,rgba(249,115,22,.1),rgba(217,119,6,.05));color:var(--sunset);font-weight:600}
+.nav-item .ico{font-size:1.1rem;width:1.5rem;text-align:center}
+.sidebar-footer{
+  padding:1rem 1.25rem;border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between
+}
+.sidebar-footer .user{font-size:.8125rem;font-weight:600}
+.sidebar-footer .role{font-size:.6875rem;color:var(--text-muted)}
+
+/* Main */
+.main{flex:1;margin-left:var(--sidebar);padding:0}
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.25rem 2rem;border-bottom:1px solid var(--border);
+  background:rgba(250,246,240,.8);backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:50
+}
+.topbar h2{font-size:1.25rem;font-weight:800}
+.topbar .crumbs{font-size:.75rem;color:var(--text-muted)}
+.page-content{padding:2rem}
+
+/* Page sections */
+.page{display:none}
+.page.active{display:block;animation:fadeIn .25s ease}
+
+/* Cards */
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:16px;box-shadow:var(--shadow)
+}
+.card-h{border-bottom:1px solid var(--border);padding:1.125rem 1.25rem;font-weight:700;font-size:.875rem;display:flex;align-items:center;gap:.5rem}
+.card-b{padding:1.25rem}
+
+/* Stats */
+.stat-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem}
+.stat-c{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:1.25rem;text-align:center;transition:all .2s;cursor:default
+}
+.stat-c:hover{border-color:rgba(249,115,22,.2);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.stat-c .ico{font-size:1.5rem;display:block;margin-bottom:.5rem}
+.stat-c h3{font-size:1.75rem;font-weight:800;margin:0}
+.stat-c p{font-size:.75rem;color:var(--text-muted);margin-top:.125rem}
+
+/* Grid */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+/* Forms */
+label{display:block;font-size:.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem}
+input,select{
+  width:100%;background:var(--cream);border:1.5px solid var(--border);
+  border-radius:12px;color:var(--text);font-size:.875rem;font-family:var(--font);
+  padding:.75rem 1rem;transition:all .2s;outline:none
+}
+input:focus,select:focus{border-color:var(--sunset);box-shadow:0 0 0 4px rgba(249,115,22,.1)}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%238a7a6a'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center}
+.mb-3{margin-bottom:1rem}.mb-4{margin-bottom:1.5rem}.mt-3{margin-top:1rem}.mt-4{margin-top:1.5rem}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+  border-radius:10px;font-weight:700;font-size:.8125rem;font-family:var(--font);
+  padding:.625rem 1.25rem;border:none;cursor:pointer;transition:all .2s
+}
+.btn-pri{
+  background:linear-gradient(135deg,var(--sunset),var(--gold));color:#fff;
+  box-shadow:0 4px 16px rgba(249,115,22,.25)
+}
+.btn-pri:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(249,115,22,.3)}
+.btn-pri:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.btn-ghost{background:transparent;color:var(--text-muted);padding:.5rem 1rem}
+.btn-ghost:hover{background:var(--cream);color:var(--text)}
+.btn-sm{padding:.5rem 1rem;font-size:.75rem;border-radius:8px}
+.btn-teal{background:var(--teal);color:#fff}
+.btn-teal:hover{background:#0f766e}
+.w-100{width:100%}
+.py-2{padding-top:.75rem;padding-bottom:.75rem}.px-3{padding-left:1rem;padding-right:1rem}
+
+/* Input group */
+.input-group{display:flex}
+.input-group .pre{
+  background:var(--cream);border:1.5px solid var(--border);border-right:none;
+  border-radius:12px 0 0 12px;color:var(--text-muted);font-size:.875rem;
+  padding:.75rem 1rem;display:flex;align-items:center
+}
+.input-group input{border-radius:0 12px 12px 0}
+
+/* Vibe */
+.vibe-g{display:flex;gap:.5rem}
+.vibe-o{
+  flex:1;background:var(--cream);border:1.5px solid var(--border);
+  border-radius:12px;padding:.75rem .5rem;cursor:pointer;text-align:center;transition:all .2s
+}
+.vibe-o:hover{border-color:var(--sunset)}
+.vibe-o.sel{border-color:var(--sunset);background:linear-gradient(135deg,rgba(249,115,22,.08),rgba(217,119,6,.05));box-shadow:0 0 0 4px rgba(249,115,22,.1)}
+.vibe-o .e{font-size:1.25rem;display:block;margin-bottom:.15rem}
+.vibe-o .l{font-weight:700;font-size:.8125rem}
+.vibe-o .d{font-size:.6875rem;color:var(--text-muted)}
+
+/* Table-like list */
+.list-c{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.list-h{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;padding:.75rem 1.25rem;font-size:.6875rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);background:var(--cream)}
+.list-r{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;padding:.875rem 1.25rem;font-size:.8125rem;cursor:pointer;transition:all .15s;border-bottom:1px solid var(--border);align-items:center}
+.list-r:last-child{border:none}
+.list-r:hover{background:rgba(249,115,22,.04)}
+.list-r .nm{font-weight:600}
+.list-r .s{font-size:.6875rem}
+
+/* Destination cards */
+.dest-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem}
+.dest-c{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:1rem;transition:all .2s;cursor:default
+}
+.dest-c:hover{border-color:rgba(249,115,22,.2);transform:translateY(-1px)}
+.dest-c .nm{font-weight:700;font-size:.875rem}
+.dest-c .i{font-size:.75rem;color:var(--text-muted);margin-top:.125rem}
+.dest-c .tag{display:inline-block;font-size:.625rem;font-weight:600;background:rgba(249,115,22,.1);color:var(--sunset);padding:.15em .6em;border-radius:20px;margin-top:.375rem}
+
+/* Trip card */
+.trip-c{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:1rem 1.25rem;cursor:pointer;transition:all .2s;
+  border-left:4px solid transparent
+}
+.trip-c:hover{border-color:rgba(249,115,22,.2);transform:translateX(4px)}
+.trip-c .nm{font-weight:700;font-size:.9375rem}
+.trip-c .meta{font-size:.8125rem;color:var(--text-muted);margin-top:.25rem}
+
+/* Badge */
+.bdg{
+  display:inline-block;font-weight:600;font-size:.625rem;
+  padding:.25em .7em;border-radius:20px;text-transform:uppercase;letter-spacing:.04em
+}
+.c-CHILL{background:rgba(13,148,136,.1);color:var(--teal)}
+.c-BALANCED{background:rgba(217,119,6,.1);color:var(--gold)}
+.c-FAST{background:rgba(225,29,72,.1);color:var(--rose)}
+.s-PLANNING{background:rgba(249,115,22,.1);color:var(--sunset)}
+.s-BOOKED{background:rgba(13,148,136,.1);color:var(--teal)}
+.s-COMPLETED{background:rgba(80,70,60,.1);color:var(--text-muted)}
+.s-CANCELLED{background:rgba(225,29,72,.1);color:var(--rose)}
+
+/* Day card */
+.day-c{
+  background:var(--cream);border:1px solid var(--border);border-radius:12px;
+  padding:.875rem 1rem;margin-bottom:.5rem;border-left:3px solid var(--sunset)
+}
+.day-c .num{
+  width:34px;height:34px;
+  background:linear-gradient(135deg,var(--sunset),var(--gold));
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:.8125rem;color:#fff
+}
+.day-c .dt{font-size:.6875rem;color:var(--text-muted)}
+.day-c .ct{font-weight:600;font-size:.875rem}
+.day-c .info{font-size:.75rem;color:var(--text-muted)}
+
+/* Detail section */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.detail-item{}
+.detail-item .lbl{font-size:.6875rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.detail-item .val{font-weight:700;margin-top:.15rem;font-size:.9375rem}
+
+/* Modal */
+.modal-o{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(26,20,10,.4);backdrop-filter:blur(6px);
+  z-index:2000;display:none;align-items:center;justify-content:center;padding:2rem
+}
+.modal-o.show{display:flex}
+.modal-bx{
+  background:var(--card);border:1px solid var(--border);border-radius:24px;
+  width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(26,20,10,.2)
+}
+.modal-h{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding:1.25rem 1.5rem}
+.modal-h h5{font-weight:800;font-size:1.1rem}
+.modal-x{background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center}
+.modal-x:hover{background:var(--cream);color:var(--text)}
+.modal-b{padding:1.5rem}
+.modal-f{border-top:1px solid var(--border);padding:1rem 1.5rem;display:flex;gap:.5rem;justify-content:flex-end}
+
+/* Misc */
+.d-flex{display:flex}
+.ai{align-items:center}
+.jb{justify-content:space-between}
+.jc{justify-content:center}
+.f1{flex:1}
+.fs0{flex-shrink:0}
+.g-2{gap:.5rem}.g-3{gap:1rem}
+.mr-1{margin-right:.25rem}.mr-2{margin-right:.5rem}.ml-2{margin-left:.5rem}
+.mb-2{margin-bottom:.5rem}
+.tr{text-align:right}.tc{text-align:center}
+hr{border:none;border-top:1px solid var(--border);margin:1rem 0}
+.welc{padding:2rem;text-align:center}
+.welc i{font-size:3rem;display:block;margin-bottom:1rem}
+.welc h3{font-size:1.25rem;font-weight:800;margin-bottom:.25rem}
+.welc p{color:var(--text-muted);font-size:.875rem}
+.nodata{padding:2rem;text-align:center;color:var(--text-muted);font-size:.875rem}
+.spin{display:inline-block;width:1rem;height:1rem;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:s .6s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><span>✦</span> wanderbase</div>
+    <nav class="sidebar-nav">
+      <div class="sec">Main</div>
+      <button class="nav-item active" data-page="dashboard">  <span class="ico">◇</span> Dashboard</button>
+      <button class="nav-item" data-page="explore">           <span class="ico">🌍</span> Explore</button>
+      <button class="nav-item" data-page="trips">             <span class="ico">✈️</span> My Trips</button>
+      <button class="nav-item" data-page="plan">              <span class="ico">✦</span> Plan Trip</button>
+      <div class="sec">Resources</div>
+      <button class="nav-item" data-page="accommodations">    <span class="ico">🏡</span> Accommodations</button>
+      <button class="nav-item" data-page="coworking">         <span class="ico">💻</span> Coworking</button>
+      <div class="sec">Account</div>
+      <button class="nav-item" data-page="profile">           <span class="ico">◎</span> Profile</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div><div class="user" id="sUser">User</div><div class="role" id="sRole">Nomad</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">✕</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h2 id="pageTitle">Dashboard</h2>
+        <div class="crumbs" id="pageCrumbs">Overview</div>
+      </div>
+      <div id="topRight"></div>
+    </div>
+    <div class="page-content">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div class="page active" id="page-dashboard">
+        <div class="stat-g" id="dashStats">
+          <div class="stat-c"><span class="ico">🌍</span><h3 id="ds1">0</h3><p>Cities</p></div>
+          <div class="stat-c"><span class="ico">🏡</span><h3 id="ds2">0</h3><p>Stays</p></div>
+          <div class="stat-c"><span class="ico">💻</span><h3 id="ds3">0</h3><p>Workspaces</p></div>
+          <div class="stat-c"><span class="ico">✈️</span><h3 id="ds4">0</h3><p>Trips Planned</p></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-h">✈️ Recent Trips</div>
+            <div class="card-b" id="dashTrips"><div class="nodata">No trips yet. Plan one!</div></div>
+          </div>
+          <div class="card">
+            <div class="card-h">🌍 Quick Destinations</div>
+            <div class="card-b" id="dashCities"><div class="nodata">Loading...</div></div>
+          </div>
+        </div>
+        <div class="card mt-4">
+          <div class="card-h">📊 Activity</div>
+          <div class="card-b">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem">
+              <div style="background:var(--cream);border-radius:12px;padding:1rem;text-align:center"><div style="font-size:2rem;font-weight:800;color:var(--sunset)" id="actTrips">0</div><div style="font-size:.75rem;color:var(--text-muted)">Total Trips</div></div>
+              <div style="background:var(--cream);border-radius:12px;padding:1rem;text-align:center"><div style="font-size:2rem;font-weight:800;color:var(--teal)" id="actDays">0</div><div style="font-size:.75rem;color:var(--text-muted)">Trip Days</div></div>
+              <div style="background:var(--cream);border-radius:12px;padding:1rem;text-align:center"><div style="font-size:2rem;font-weight:800;color:var(--gold)" id="actBudget">$0</div><div style="font-size:.75rem;color:var(--text-muted)">Total Budget</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== EXPLORE ===== -->
+      <div class="page" id="page-explore">
+        <div class="dest-g" id="exploreCities"></div>
+      </div>
+
+      <!-- ===== MY TRIPS ===== -->
+      <div class="page" id="page-trips">
+        <div class="d-flex ai jb mb-3">
+          <div style="font-size:.8125rem;color:var(--text-muted)" id="tripCount">0 trips</div>
+          <button class="btn btn-pri btn-sm" onclick="navigate('plan')">✦ New Trip</button>
+        </div>
+        <div id="tripsList"></div>
+      </div>
+
+      <!-- ===== PLAN TRIP ===== -->
+      <div class="page" id="page-plan">
+        <div class="card" style="max-width:600px">
+          <div class="card-h">✦ Plan a New Trip</div>
+          <div class="card-b">
+            <form id="tripForm">
+              <div class="mb-3"><label>Trip name</label><input type="text" id="tripName" placeholder="e.g. Bali Digital Detox" required></div>
+              <div class="mb-3"><label>Starting from</label><select id="originCityId" required><option value="">Choose city...</option></select></div>
+              <div class="grid-2 mb-3" style="gap:.75rem">
+                <div><label>Check in</label><input type="date" id="startDate" required></div>
+                <div><label>Check out</label><input type="date" id="endDate" required></div>
+              </div>
+              <div class="mb-3">
+                <label>Budget</label>
+                <div class="input-group"><span class="pre">$</span><input type="number" id="totalBudget" min="100" value="2000" required></div>
+              </div>
+              <div class="mb-4">
+                <label>Travel style</label>
+                <div class="vibe-g">
+                  <div class="vibe-o" data-vibe="CHILL"><span class="e">🌴</span><div class="l">Chill</div><div class="d">Slow & steady</div></div>
+                  <div class="vibe-o sel" data-vibe="BALANCED"><span class="e">⚖️</span><div class="l">Balanced</div><div class="d">Work & play</div></div>
+                  <div class="vibe-o" data-vibe="FAST"><span class="e">🚀</span><div class="l">Fast</div><div class="d">Full grind</div></div>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-pri w-100 py-2">✦ Build My Trip</button>
+            </form>
+            <div id="tripError" style="display:none;background:rgba(225,29,72,.06);border:1px solid rgba(225,29,72,.15);color:var(--rose);border-radius:12px;padding:.75rem 1rem;font-size:.8125rem;margin-top:.75rem"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ACCOMMODATIONS ===== -->
+      <div class="page" id="page-accommodations">
+        <div id="accList"><div class="nodata">Loading...</div></div>
+      </div>
+
+      <!-- ===== COWORKING ===== -->
+      <div class="page" id="page-coworking">
+        <div id="coworkList"><div class="nodata">Loading...</div></div>
+      </div>
+
+      <!-- ===== PROFILE ===== -->
+      <div class="page" id="page-profile">
+        <div class="card" style="max-width:480px">
+          <div class="card-h">◎ Profile</div>
+          <div class="card-b">
+            <div class="tc mb-4">
+              <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--sunset),var(--gold));display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.5rem;color:#fff;font-weight:700" id="avatarLetter">A</div>
+              <h3 id="profileName" style="font-weight:800">Alice</h3>
+              <p style="font-size:.8125rem;color:var(--text-muted)" id="profileEmail">alice@nomad.io</p>
+            </div>
+            <hr>
+            <div class="grid-2 mt-3" style="gap:.75rem">
+              <div style="background:var(--cream);border-radius:12px;padding:1rem;text-align:center"><div style="font-size:1.5rem;font-weight:800" id="pTrips">0</div><div style="font-size:.75rem;color:var(--text-muted)">Trips</div></div>
+              <div style="background:var(--cream);border-radius:12px;padding:1rem;text-align:center"><div style="font-size:1.5rem;font-weight:800" id="pBudget">$0</div><div style="font-size:.75rem;color:var(--text-muted)">Total Spent</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-o" id="tripModal">
+  <div class="modal-bx">
+    <div class="modal-h"><h5 id="modalTitle">Trip</h5><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-b">
+      <div class="detail-grid">
+        <div class="detail-item"><div class="lbl">Budget</div><div class="val" id="modalBudget">—</div></div>
+        <div class="detail-item"><div class="lbl">Vibe</div><div class="val" id="modalVibe">—</div></div>
+        <div class="detail-item"><div class="lbl">Status</div><div class="val" id="modalStatus">—</div></div>
+        <div class="detail-item"><div class="lbl">Duration</div><div class="val" id="modalDuration">—</div></div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-item"><div class="lbl">Check in</div><div class="val" id="modalStart">—</div></div>
+        <div class="detail-item"><div class="lbl">Check out</div><div class="val" id="modalEnd">—</div></div>
+      </div>
+      <hr>
+      <h6 style="font-weight:700;font-size:.875rem;margin-bottom:1rem">📅 Itinerary</h6>
+      <div id="itineraryDays"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-teal btn-sm" onclick="updateTripStatus('BOOKED')">✓ Book</button>
+      <button class="btn btn-ghost btn-sm" onclick="updateTripStatus('CANCELLED')" style="color:var(--rose)">✕ Cancel</button>
+      <span id="modalTripId" class="d-none"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Auth overlay -->
+<div style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;background:linear-gradient(135deg,var(--cream),var(--sand),var(--cream));display:flex;align-items:center;justify-content:center" id="authOverlay">
+  <div style="width:100%;max-width:400px;padding:2rem">
+    <div class="tc mb-4">
+      <div style="width:72px;height:72px;background:linear-gradient(135deg,var(--sunset),var(--gold));border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:2rem;box-shadow:0 8px 32px rgba(249,115,22,.25)">✦</div>
+      <h1 style="font-size:1.5rem;font-weight:800">Your next chapter starts here</h1>
+      <p style="color:var(--text-muted);font-size:.875rem;margin-top:.25rem">Plan trips, find workspaces, go nomadic</p>
+    </div>
+    <div class="card">
+      <div class="card-h" style="border:none;padding-bottom:0">
+        <div class="tabs" style="display:flex">
+          <button class="tab active" data-tab="loginTab" style="flex:1;padding:.75rem;text-align:center;cursor:pointer;font-weight:600;font-size:.8125rem;color:var(--text-muted);border:none;background:none;border-bottom:2px solid transparent;font-family:var(--font)">Sign In</button>
+          <button class="tab" data-tab="registerTab" style="flex:1;padding:.75rem;text-align:center;cursor:pointer;font-weight:600;font-size:.8125rem;color:var(--text-muted);border:none;background:none;border-bottom:2px solid transparent;font-family:var(--font)">Join</button>
+        </div>
+      </div>
+      <div class="card-b">
+        <div id="loginTab" class="tab-pane" style="display:block">
+          <form id="loginForm">
+            <div class="mb-3"><label>Email</label><input type="email" id="loginEmail" value="alice@nomad.io" required></div>
+            <div class="mb-3"><label>Password</label><input type="password" id="loginPassword" value="pass123" required></div>
+            <button type="submit" class="btn btn-pri w-100 py-2">Sign In</button>
+            <div id="loginError" style="display:none;background:rgba(225,29,72,.06);border:1px solid rgba(225,29,72,.15);color:var(--rose);border-radius:12px;padding:.75rem 1rem;font-size:.8125rem;margin-top:.75rem"></div>
+          </form>
+        </div>
+        <div id="registerTab" class="tab-pane" style="display:none">
+          <form id="registerForm">
+            <div class="mb-3"><label>Name</label><input type="text" id="regName" placeholder="Your name" required></div>
+            <div class="mb-3"><label>Email</label><input type="email" id="regEmail" placeholder="you@example.com" required></div>
+            <div class="mb-3"><label>Password</label><input type="password" id="regPassword" minlength="4" required></div>
+            <button type="submit" class="btn btn-pri w-100 py-2">Create Account</button>
+            <div id="registerError" style="display:none;background:rgba(225,29,72,.06);border:1px solid rgba(225,29,72,.15);color:var(--rose);border-radius:12px;padding:.75rem 1rem;font-size:.8125rem;margin-top:.75rem"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API='';let token=localStorage.getItem('token');let cid=null;let sv='BALANCED'
+let cityCache=[], accCache=[], cwCache=[], tripCache=[]
+
+document.addEventListener('DOMContentLoaded',()=>{
+  if(token){hideAuth();initApp()}else showAuth()
+  setupTabs()
+})
+
+function setupTabs(){
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',function(){
+    document.querySelectorAll('.tab').forEach(x=>{x.style.color='var(--text-muted)';x.style.borderBottomColor='transparent'})
+    document.querySelectorAll('.tab-pane').forEach(x=>x.style.display='none')
+    this.style.color='var(--sunset)';this.style.borderBottomColor='var(--sunset)'
+    document.getElementById(this.dataset.tab).style.display='block'
+  }))
+  document.querySelectorAll('.vibe-o').forEach(e=>e.addEventListener('click',function(){
+    document.querySelectorAll('.vibe-o').forEach(x=>x.classList.remove('sel'));this.classList.add('sel');sv=this.dataset.vibe
+  }))
+  document.querySelectorAll('.nav-item').forEach(item=>{
+    item.addEventListener('click',()=>navigate(item.dataset.page))
+  })
+}
+
+const titles={dashboard:'Dashboard',explore:'Explore',trips:'My Trips',plan:'Plan Trip',accommodations:'Accommodations',coworking:'Coworking Spaces',profile:'Profile'}
+const crumbs={dashboard:'Overview',explore:'Destinations',trips:'Trip Management',plan:'New Trip',accommodations:'Stays',coworking:'Workspaces',profile:'Account'}
+
+function navigate(page){
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'))
+  document.querySelector(`.nav-item[data-page="${page}"]`).classList.add('active')
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'))
+  document.getElementById('page-'+page).classList.add('active')
+  document.getElementById('pageTitle').textContent=titles[page]||page
+  document.getElementById('pageCrumbs').textContent=crumbs[page]||''
+  if(page==='dashboard')loadDashboard()
+  if(page==='explore')loadExplore()
+  if(page==='trips')loadTripsPage()
+  if(page==='plan')populateCitySelects()
+  if(page==='accommodations')loadAccPage()
+  if(page==='coworking')loadCoworkPage()
+  if(page==='profile')loadProfile()
+  window.scrollTo(0,0)
+}
+
+// Auth
+async function login(e){
+  e.preventDefault();const err=document.getElementById('loginError');err.style.display='none'
+  try{
+    const r=await fetch(API+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:document.getElementById('loginEmail').value,password:document.getElementById('loginPassword').value})})
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.message||'Invalid credentials')}
+    const data=await r.json();token=data.token;localStorage.setItem('token',token);hideAuth();initApp()
+  }catch(e){err.textContent=e.message;err.style.display='block'}
+}
+async function register(e){
+  e.preventDefault();const err=document.getElementById('registerError');err.style.display='none'
+  try{
+    const r=await fetch(API+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('regName').value,email:document.getElementById('regEmail').value,password:document.getElementById('regPassword').value})})
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.message||'Registration failed')}
+    alert('Account created! Sign in.');document.querySelector('[data-tab="loginTab"]').click()
+  }catch(e){err.textContent=e.message;err.style.display='block'}
+}
+function logout(){token=null;localStorage.removeItem('token');document.getElementById('authOverlay').style.display='flex'}
+function showAuth(){document.getElementById('authOverlay').style.display='flex'}
+function hideAuth(){document.getElementById('authOverlay').style.display='none'}
+
+async function initApp(){
+  try{document.getElementById('sUser').textContent=JSON.parse(atob(token.split('.')[1])).sub||'User'}catch(e){}
+  await loadAll();navigate('dashboard')
+}
+
+async function api(path,opts={}){
+  const r=await fetch(API+path,{...opts,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{}),...opts.headers}})
+  if(r.status===401||r.status===403){logout();throw new Error('Session expired')}
+  if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.message||'Error '+r.status)}
+  return r.status===204?null:r.json()
+}
+
+async function loadAll(){
+  try{
+    const [c,ac,cw,t]=await Promise.all([api('/api/cities'),api('/api/accommodations'),api('/api/coworking'),api('/api/trips')])
+    cityCache=c;accCache=ac;cwCache=cw;tripCache=t
+  }catch(e){console.error(e)}
+}
+
+function loadDashboard(){
+  document.getElementById('ds1').textContent=cityCache.length
+  document.getElementById('ds2').textContent=accCache.length
+  document.getElementById('ds3').textContent=cwCache.length
+  document.getElementById('ds4').textContent=tripCache.length
+  let td=0,tb=0;tripCache.forEach(t=>{td+=daysBetween(t.startDate,t.endDate);tb+=parseFloat(t.totalBudget||0)})
+  document.getElementById('actTrips').textContent=tripCache.length
+  document.getElementById('actDays').textContent=td
+  document.getElementById('actBudget').textContent='$'+tb
+  // Cities grid
+  document.getElementById('dashCities').innerHTML=cityCache.slice(0,6).map(c=>'<div style="background:var(--cream);border-radius:10px;padding:.75rem;margin-bottom:.5rem"><div style="font-weight:600;font-size:.8125rem">'+c.name+'</div><div style="font-size:.6875rem;color:var(--text-muted)">'+c.country+'</div></div>').join('')
+  // Recent trips
+  const el=document.getElementById('dashTrips')
+  if(!tripCache.length){el.innerHTML='<div class="nodata">No trips yet.</div>';return}
+  el.innerHTML=tripCache.slice(-3).reverse().map(t=>'<div class="trip-c mb-2" onclick="viewTrip('+t.id+')"><div class="nm">'+t.name+'</div><div class="meta">📅 '+t.startDate+' → '+t.endDate+' · $'+t.totalBudget+'</div></div>').join('')
+}
+function daysBetween(a,b){const d1=new Date(a),d2=new Date(b);return Math.max(0,Math.floor((d2-d1)/(864e5))+1)}
+
+function loadExplore(){
+  document.getElementById('exploreCities').innerHTML=cityCache.map(c=>
+    '<div class="dest-c"><div class="nm">'+c.name+'</div><div class="i">'+c.country+'</div><div class="tag">Cost '+c.costIndex+'</div></div>'
+  ).join('')
+}
+
+function loadTripsPage(){
+  document.getElementById('tripCount').textContent=tripCache.length+' trips'
+  const el=document.getElementById('tripsList')
+  if(!tripCache.length){el.innerHTML='<div class="nodata">No trips yet.</div>';return}
+  el.innerHTML='<div class="list-c"><div class="list-h"><span>Name</span><span>Dates</span><span>Budget</span><span>Status</span></div>'+
+    tripCache.map(t=>'<div class="list-r" onclick="viewTrip('+t.id+')"><span class="nm">'+t.name+'</span><span style="font-size:.75rem">'+t.startDate+'</span><span>$'+t.totalBudget+'</span><span class="bdg s-'+t.status+'">'+t.status+'</span></div>').join('')+
+  '</div>'
+}
+
+function loadAccPage(){
+  const el=document.getElementById('accList')
+  if(!accCache.length){el.innerHTML='<div class="nodata">No accommodations.</div>';return}
+  el.innerHTML='<div class="list-c"><div class="list-h"><span>Name</span><span>City</span><span>Price</span><span>Type</span></div>'+
+    accCache.map(a=>'<div class="list-r"><span class="nm">'+a.name+'</span><span style="font-size:.75rem">'+(a.cityName||'')+'</span><span>$'+a.pricePerNight+'/night</span><span class="s">'+a.type+'</span></div>').join('')+
+  '</div>'
+}
+
+function loadCoworkPage(){
+  const el=document.getElementById('coworkList')
+  if(!cwCache.length){el.innerHTML='<div class="nodata">No coworking spaces.</div>';return}
+  el.innerHTML='<div class="list-c"><div class="list-h"><span>Name</span><span>City</span><span>Price</span><span>Rating</span></div>'+
+    cwCache.map(c=>'<div class="list-r"><span class="nm">'+c.name+'</span><span style="font-size:.75rem">'+(c.cityName||'')+'</span><span>$'+c.pricePerDay+'/day</span><span>★ '+c.rating+'</span></div>').join('')+
+  '</div>'
+}
+
+function loadProfile(){
+  document.getElementById('profileName').textContent='Alice'
+  document.getElementById('profileEmail').textContent=document.getElementById('loginEmail').value||'alice@nomad.io'
+  document.getElementById('avatarLetter').textContent='A'
+  let tb=0;tripCache.forEach(t=>tb+=parseFloat(t.totalBudget||0))
+  document.getElementById('pTrips').textContent=tripCache.length
+  document.getElementById('pBudget').textContent='$'+tb
+  document.getElementById('sUser').textContent='Alice'
+  document.getElementById('sRole').textContent=tripCache.length+' trips'
+}
+
+function populateCitySelects(){
+  const el=document.getElementById('originCityId')
+  el.innerHTML='<option value="">Choose city...</option>'+cityCache.map(x=>'<option value="'+x.id+'">'+x.name+', '+x.country+'</option>').join('')
+}
+
+// Plan trip
+document.getElementById('tripForm').addEventListener('submit',async function(e){
+  e.preventDefault();const err=document.getElementById('tripError');err.style.display='none'
+  const btn=this.querySelector('button[type="submit"]');btn.disabled=true;btn.innerHTML='<span class="spin" style="margin-right:.5rem"></span>Building...'
+  try{
+    const body={name:document.getElementById('tripName').value,vibe:sv,totalBudget:parseFloat(document.getElementById('totalBudget').value),currency:'USD',startDate:document.getElementById('startDate').value,endDate:document.getElementById('endDate').value,originCityId:parseInt(document.getElementById('originCityId').value)}
+    if(body.startDate>body.endDate)throw new Error('Check-out must be after check-in')
+    const trip=await api('/api/trips',{method:'POST',body:JSON.stringify(body)})
+    this.reset();sv='BALANCED';document.querySelectorAll('.vibe-o').forEach(x=>x.classList.remove('sel'))
+    document.querySelector('[data-vibe="BALANCED"]').classList.add('sel')
+    await loadAll();viewTrip(trip.id);
+    document.getElementById('tripName').focus()
+  }catch(e){err.textContent=e.message;err.style.display='block'}
+  finally{btn.disabled=false;btn.innerHTML='✦ Build My Trip'}
+})
+
+// View trip modal
+async function viewTrip(id){
+  try{
+    const t=await api('/api/trips/'+id);cid=t.id
+    document.getElementById('modalTripId').textContent=t.id
+    document.getElementById('modalTitle').textContent=t.name
+    document.getElementById('modalBudget').textContent='$'+t.totalBudget+' '+t.currency
+    document.getElementById('modalVibe').innerHTML='<span class="bdg c-'+t.vibe+'" style="font-size:.75rem;padding:.35em .8em">'+t.vibe+'</span>'
+    document.getElementById('modalStatus').innerHTML='<span class="bdg s-'+t.status+'" style="font-size:.75rem;padding:.35em .8em">'+t.status+'</span>'
+    document.getElementById('modalStart').textContent=t.startDate
+    document.getElementById('modalEnd').textContent=t.endDate
+    const d=daysBetween(t.startDate,t.endDate)
+    document.getElementById('modalDuration').textContent=d+' day'+(d>1?'s':'')
+    const cont=document.getElementById('itineraryDays')
+    if(!t.itineraryDays||!t.itineraryDays.length){cont.innerHTML='<p style="color:var(--text-muted);font-size:.875rem;text-align:center;padding:1rem">No itinerary yet.</p>';document.getElementById('tripModal').classList.add('show');return}
+    cont.innerHTML=t.itineraryDays.map(x=>'<div class="day-c"><div class="d-flex ai g-3"><div class="tc"><div class="num">'+x.dayNumber+'</div><div class="dt">'+x.date+'</div></div><div class="f1"><div class="ct">'+x.cityName+'</div><div class="info">🏠 '+(x.accommodationName||'TBD')+'  |  💻 '+(x.coworkingSpaceName||'Rest day')+'</div></div></div></div>').join('')
+    document.getElementById('tripModal').classList.add('show')
+  }catch(e){alert(e.message)}
+}
+function closeModal(){document.getElementById('tripModal').classList.remove('show')}
+document.getElementById('tripModal').addEventListener('click',function(e){if(e.target===this)closeModal()})
+async function updateTripStatus(s){if(!cid)return;try{await api('/api/trips/'+cid+'/status?status='+s,{method:'PATCH'});closeModal();await loadAll();loadTripsPage()}catch(e){alert(e.message)}}
+
+document.getElementById('loginForm').addEventListener('submit',login)
+document.getElementById('registerForm').addEventListener('submit',register)
+
+// Re-init on load
+document.addEventListener('DOMContentLoaded',()=>{
+  if(token){hideAuth();initApp()}
+})
+</script>
+</body>
+</html>

@@ -25,6 +25,11 @@ public class AccommodationService {
         this.cityService = cityService;
     }
 
+    public List<AccommodationDto> findAll() {
+        return accommodationRepository.findAll().stream()
+                .map(accommodationMapper::toDto).toList();
+    }
+
     public List<AccommodationDto> findByCity(Long cityId) {
         City city = cityService.getCityEntity(cityId);
         return accommodationRepository.findByCityAndAvailableTrue(city).stream()

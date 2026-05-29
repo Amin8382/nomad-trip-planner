@@ -25,6 +25,11 @@ public class CoworkingSpaceService {
         this.cityService = cityService;
     }
 
+    public List<CoworkingSpaceDto> findAll() {
+        return coworkingSpaceRepository.findAll().stream()
+                .map(coworkingSpaceMapper::toDto).toList();
+    }
+
     public List<CoworkingSpaceDto> findByCity(Long cityId) {
         City city = cityService.getCityEntity(cityId);
         return coworkingSpaceRepository.findByCity(city).stream()
